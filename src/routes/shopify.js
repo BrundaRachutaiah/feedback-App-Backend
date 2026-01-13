@@ -1,6 +1,7 @@
-import express from "express";
-import crypto from "crypto";
-import querystring from "querystring";
+const express = require("express");
+const crypto = require("crypto");
+const querystring = require("querystring");
+const axios = require("axios");
 
 const router = express.Router();
 
@@ -34,15 +35,15 @@ router.get("/install", (req, res) => {
  * STEP 2: Shopify redirects here after authorization
  */
 router.get("/callback", async (req, res) => {
-  const { shop, hmac, code, state } = req.query;
+  const { shop, hmac, code } = req.query;
 
   if (!shop || !hmac || !code) {
     return res.status(400).send("Required parameters missing");
   }
 
-  // ✅ Verify HMAC (security check)
+  // 🔐 Verify HMAC
   const map = { ...req.query };
-  delete map["hmac"];
+  delete map.hmac;
 
   const message = Object.keys(map)
     .sort()
@@ -59,7 +60,7 @@ router.get("/callback", async (req, res) => {
   }
 
   try {
-    // ✅ Exchange code for access token
+    // 🔁 Exchange code for access token
     const tokenResponse = await axios.post(
       `https://${shop}/admin/oauth/access_token`,
       {
@@ -72,17 +73,27 @@ router.get("/callback", async (req, res) => {
     const accessToken = tokenResponse.data.access_token;
 
     /**
-     * TODO (Next step):
+     * TODO (later):
      * Save shop + accessToken in DB
      */
 
-    return res.send(
-      "✅ Shopify app installed successfully. You can close this window."
-    );
+    // ✅ Redirect to embedded app entry
+    return res.redirect(`/shopify/app?shop=${shop}`);
   } catch (err) {
     console.error(err.response?.data || err.message);
     return res.status(500).send("Failed to get access token");
   }
 });
 
-export default router;
+/**
+ * STEP 3: EMBEDDED APP ENTRY POINT
+ */
+router.get("/app", (req, res) => {
+  const shop = req.query.shop;
+
+  return res.redirect(
+    `https://feedback-app-frontend-beta.vercel.app?shop=${shop}`
+  );
+});
+
+module.exports = router;
