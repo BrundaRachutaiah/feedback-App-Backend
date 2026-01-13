@@ -1,3 +1,5 @@
+import shopifyRoutes from "./routes/shopify.js";
+
 const express = require("express");
 const cors = require("cors");
 
@@ -17,5 +19,7 @@ app.use("/api/feedback", feedbackRoutes);
 
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/analytics", analyticsRoutes);
+
+app.use("/shopify", shopifyRoutes);
 
 module.exports = app;
