@@ -12,7 +12,6 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// ✅ ROOT ROUTE (THIS FIXES SHOPIFY APP LOADING)
 app.get("/", (req, res) => {
   const shop = req.query.shop;
 
@@ -20,8 +19,37 @@ app.get("/", (req, res) => {
     return res.send("Feedback App backend running");
   }
 
-  // 🔁 Shopify Admin always hits `/`
-  return res.redirect(`/shopify/app?shop=${shop}`);
+  return res.send(`
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <meta charset="UTF-8" />
+        <meta
+          http-equiv="Content-Security-Policy"
+          content="frame-ancestors https://admin.shopify.com https://*.myshopify.com"
+        />
+        <title>Feedback App</title>
+        <style>
+          html, body {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+          }
+          iframe {
+            width: 100%;
+            height: 100vh;
+            border: none;
+          }
+        </style>
+      </head>
+      <body>
+        <iframe
+          src="https://feedback-app-frontend-beta.vercel.app?shop=${shop}"
+          allowfullscreen
+        ></iframe>
+      </body>
+    </html>
+  `);
 });
 
 // ✅ BUSINESS ROUTES
