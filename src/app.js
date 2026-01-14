@@ -14,8 +14,9 @@ app.use(express.json());
 
 app.get("/", (req, res) => {
   const shop = req.query.shop;
+  const host = req.query.host;
 
-  if (!shop) {
+  if (!shop || !host) {
     return res.send("Feedback App backend running");
   }
 
@@ -44,8 +45,7 @@ app.get("/", (req, res) => {
       </head>
       <body>
         <iframe
-          src="https://feedback-app-frontend-beta.vercel.app?shop=${shop}"
-          allowfullscreen
+          src="https://feedback-app-frontend-beta.vercel.app?shop=${shop}&host=${host}"
         ></iframe>
       </body>
     </html>
