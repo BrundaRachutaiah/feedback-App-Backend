@@ -6,16 +6,14 @@ const axios = require("axios");
 const router = express.Router();
 
 /**
- * STEP 1: Redirect merchant to Shopify OAuth screen
+ * STEP 1: Redirect merchant to Shopify OAuth
  */
 router.get("/install", (req, res) => {
-  const shop = req.query.shop;
+  const { shop } = req.query;
 
   if (!shop) {
     return res.status(400).send("Missing shop parameter");
   }
-
-  const nonce = crypto.randomBytes(16).toString("hex");
 
   const redirectUri = `${process.env.SHOPIFY_APP_URL}/shopify/callback`;
 
@@ -25,19 +23,19 @@ router.get("/install", (req, res) => {
       client_id: process.env.SHOPIFY_CLIENT_ID,
       scope: process.env.SHOPIFY_SCOPES,
       redirect_uri: redirectUri,
-      state: nonce,
+      state: crypto.randomBytes(16).toString("hex"),
     });
 
   return res.redirect(installUrl);
 });
 
 /**
- * STEP 2: Shopify redirects here after authorization
+ * STEP 2: Shopify OAuth callback
  */
 router.get("/callback", async (req, res) => {
-  const { shop, hmac, code } = req.query;
+  const { shop, hmac, code, host } = req.query;
 
-  if (!shop || !hmac || !code) {
+  if (!shop || !hmac || !code || !host) {
     return res.status(400).send("Required parameters missing");
   }
 
@@ -61,42 +59,24 @@ router.get("/callback", async (req, res) => {
 
   try {
     // 🔁 Exchange code for access token
-    const tokenResponse = await axios.post(
-      `https://${shop}/admin/oauth/access_token`,
-      {
-        client_id: process.env.SHOPIFY_CLIENT_ID,
-        client_secret: process.env.SHOPIFY_CLIENT_SECRET,
-        code,
-      }
-    );
-
-    const accessToken = tokenResponse.data.access_token;
+    await axios.post(`https://${shop}/admin/oauth/access_token`, {
+      client_id: process.env.SHOPIFY_CLIENT_ID,
+      client_secret: process.env.SHOPIFY_CLIENT_SECRET,
+      code,
+    });
 
     /**
-     * TODO (later):
+     * TODO:
      * Save shop + accessToken in DB
      */
 
-    // ✅ Redirect to embedded app entry
-    return res.redirect(`/shopify/app?shop=${shop}`);
+    // ✅ IMPORTANT:
+    // Redirect BACK to App URL (NOT frontend)
+    return res.redirect(`/?shop=${shop}&host=${host}`);
   } catch (err) {
     console.error(err.response?.data || err.message);
     return res.status(500).send("Failed to get access token");
   }
-});
-
-/**
- * STEP 3: EMBEDDED APP ENTRY POINT
- */
-router.get("/app", (req, res) => {
-  const shop = req.query.shop;
-  // 👇 ADD THIS: Capture the host parameter
-  const host = req.query.host; 
-
-  // 👇 UPDATE THIS: Pass the host to your frontend
-  return res.redirect(
-    `https://feedback-app-frontend-beta.vercel.app?shop=${shop}&host=${host}`
-  );
 });
 
 module.exports = router;
