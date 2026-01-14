@@ -90,9 +90,12 @@ router.get("/callback", async (req, res) => {
  */
 router.get("/app", (req, res) => {
   const shop = req.query.shop;
+  // 👇 ADD THIS: Capture the host parameter
+  const host = req.query.host; 
 
+  // 👇 UPDATE THIS: Pass the host to your frontend
   return res.redirect(
-    `https://feedback-app-frontend-beta.vercel.app?shop=${shop}`
+    `https://feedback-app-frontend-beta.vercel.app?shop=${shop}&host=${host}`
   );
 });
 
