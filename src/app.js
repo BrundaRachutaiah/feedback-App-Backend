@@ -12,6 +12,18 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// ✅ ROOT ROUTE (THIS FIXES SHOPIFY APP LOADING)
+app.get("/", (req, res) => {
+  const shop = req.query.shop;
+
+  if (!shop) {
+    return res.send("Feedback App backend running");
+  }
+
+  // 🔁 Shopify Admin always hits `/`
+  return res.redirect(`/shopify/app?shop=${shop}`);
+});
+
 // ✅ BUSINESS ROUTES
 app.use("/api/shops", shopRoutes);
 app.use("/api/feedback", feedbackRoutes);
